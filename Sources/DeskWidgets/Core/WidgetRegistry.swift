@@ -28,5 +28,6 @@ final class WidgetRegistry {
         register(NoteWidget())
         register(TodoWidget())
         register(SystemMonitorWidget())
+        register(AIAgentWidget())
     }
 }

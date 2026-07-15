@@ -43,13 +43,14 @@ enum ScreenPlacement {
         return PlacementResult(frame: frame, screenKey: key)
     }
 
-    /// 将 frame 约束到其所属屏幕;完全不可见时移到原屏幕或主屏中央。
+    /// 将 frame 约束到其当前所在屏幕;仅当完全不可见时回退到已保存屏幕或主屏。
     static func normalizeFrame(
         _ frame: CGRect,
         screenKey: String? = nil,
         index: Int = 0
     ) -> PlacementResult {
-        if let screen = resolveScreen(screenKey: screenKey, frame: frame) {
+        let screen = resolveScreen(screenKey: screenKey, frame: frame)
+        if let screen {
             let visible = screen.visibleFrame
             if visible.intersects(frame) {
                 return PlacementResult(
@@ -92,17 +93,20 @@ enum ScreenPlacement {
         return NSScreen.screens.first { $0.frame.contains(location) }
     }
 
-    /// 根据 screenKey 或 frame 中心点查找对应屏幕。
+    /// 根据 frame 实际位置或 screenKey 查找屏幕。
+    /// 优先按 frame 中心点匹配,以支持跨屏拖动;仅 frame 不可见时回退 screenKey。
     static func resolveScreen(screenKey: String?, frame: CGRect?) -> NSScreen? {
-        if let key = screenKey, let matched = NSScreen.matching(key) {
-            return matched
-        }
         if let frame {
             let center = CGPoint(x: frame.midX, y: frame.midY)
             if let screen = NSScreen.screens.first(where: { $0.frame.contains(center) }) {
                 return screen
             }
-            return NSScreen.screens.first { $0.visibleFrame.intersects(frame) }
+            if let screen = NSScreen.screens.first(where: { $0.visibleFrame.intersects(frame) }) {
+                return screen
+            }
+        }
+        if let key = screenKey, let matched = NSScreen.matching(key) {
+            return matched
         }
         return nil
     }

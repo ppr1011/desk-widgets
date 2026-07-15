@@ -5,15 +5,43 @@ import Combine
 /// 桥接 store 数据 与 屏幕上的 NSPanel 窗口。
 /// 所有组件统一使用 WidgetPanel,避免 NSWindow 导致 Dock 出现图标。
 final class WindowManager {
+    /// 请求把某个组件移到当前桌面(object 为组件实例 UUID)。
+    static let moveToActiveSpaceNotification = Notification.Name("MoveWidgetToActiveSpace")
+
     private let store: WidgetStore
     private var panels: [UUID: WidgetPanel] = [:]
     private var cancellable: AnyCancellable?
+    private var moveObserver: NSObjectProtocol?
 
     init(store: WidgetStore) {
         self.store = store
         cancellable = store.$instances
             .receive(on: RunLoop.main)
             .sink { [weak self] instances in self?.sync(instances) }
+        moveObserver = NotificationCenter.default.addObserver(
+            forName: Self.moveToActiveSpaceNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] note in
+            guard let id = note.object as? UUID else { return }
+            self?.moveToActiveSpace(id: id)
+        }
+    }
+
+    /// 把组件搬到「当前鼠标所在屏幕的可见区域中央 + 当前 Space」并确保露出。
+    private func moveToActiveSpace(id: UUID) {
+        guard let panel = panels[id], let instance = store.instance(id: id) else { return }
+        let placement = ScreenPlacement.centeredOnActiveScreen(size: instance.frame.size)
+        var updated = instance
+        updated.frame = placement.frame
+        updated.screenKey = placement.screenKey
+        store.update(updated)
+        panel.setFrame(placement.frame, display: true)
+        panel.moveToActiveSpace()
+    }
+
+    deinit {
+        if let moveObserver { NotificationCenter.default.removeObserver(moveObserver) }
     }
 
     private func sync(_ instances: [WidgetInstance]) {

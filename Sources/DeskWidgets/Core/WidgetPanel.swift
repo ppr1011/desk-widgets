@@ -53,6 +53,18 @@ final class WidgetPanel: NSPanel, NSWindowDelegate {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
 
+    /// 把组件移动到当前正在显示的桌面(Space)。
+    /// macOS 公开 API 无法按序号定位 Space,只能借助 .moveToActiveSpace 移到当前活跃桌面;
+    /// 移动完成后恢复原 collectionBehavior,避免每次激活都被拉走。
+    func moveToActiveSpace() {
+        let original = collectionBehavior
+        collectionBehavior = [.moveToActiveSpace]
+        orderFrontRegardless()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+            self?.collectionBehavior = original
+        }
+    }
+
     /// 切换窗口层级
     func applyLevel(_ level: WidgetLevel) {
         switch level {

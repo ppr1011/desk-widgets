@@ -16,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         WidgetRegistry.shared.registerBuiltins()
         windowManager = WindowManager(store: store)
         statusBar = StatusBarController(store: store)
+        AIAssistantCoordinator.shared.configure(store: store)
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {

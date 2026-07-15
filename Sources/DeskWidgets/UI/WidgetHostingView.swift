@@ -28,6 +28,8 @@ final class WidgetHostingView: NSHostingView<AnyView> {
 
     override func rightMouseDown(with event: NSEvent) {
         window?.orderFrontRegardless()
+        // 激活 App,避免后台 accessory 状态下菜单项被判为不可用而置灰
+        InputActivationManager.shared.activateForInput()
         if let menu = menu(for: event) {
             NSMenu.popUpContextMenu(menu, with: event, for: self)
             return
@@ -43,12 +45,27 @@ final class WidgetHostingView: NSHostingView<AnyView> {
         } ?? "组件"
 
         let menu = NSMenu()
+        // 后台(accessory)状态下自动校验会把菜单项判为不可用而置灰,这里关闭自动校验,手动保证可点。
+        menu.autoenablesItems = false
+
+        let moveItem = NSMenuItem(
+            title: "移到当前桌面",
+            action: #selector(moveToActiveSpace(_:)),
+            keyEquivalent: ""
+        )
+        moveItem.target = self
+        moveItem.isEnabled = true
+        menu.addItem(moveItem)
+
+        menu.addItem(.separator())
+
         let closeItem = NSMenuItem(
             title: "关闭\(name)",
             action: #selector(closeWidget(_:)),
             keyEquivalent: ""
         )
         closeItem.target = self
+        closeItem.isEnabled = true
         menu.addItem(closeItem)
         return menu
     }
@@ -56,6 +73,14 @@ final class WidgetHostingView: NSHostingView<AnyView> {
     @objc private func closeWidget(_ sender: NSMenuItem) {
         guard let instanceID else { return }
         widgetStore?.remove(id: instanceID)
+    }
+
+    @objc private func moveToActiveSpace(_ sender: NSMenuItem) {
+        guard let instanceID else { return }
+        NotificationCenter.default.post(
+            name: WindowManager.moveToActiveSpaceNotification,
+            object: instanceID
+        )
     }
 }
 
@@ -109,6 +134,7 @@ private final class DragHandleView: NSView {
 
     override func rightMouseDown(with event: NSEvent) {
         window?.orderFrontRegardless()
+        InputActivationManager.shared.activateForInput()
         if let hosting = findHostingAncestor(), let menu = hosting.menu(for: event) {
             NSMenu.popUpContextMenu(menu, with: event, for: self)
             return

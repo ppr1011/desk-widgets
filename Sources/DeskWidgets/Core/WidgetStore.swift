@@ -69,8 +69,17 @@ final class WidgetStore: ObservableObject {
             fixed.screenKey = result.screenKey
             return fixed
         }
-        instances = ScreenPlacement.cascadeOverlapping(normalized)
+        instances = ScreenPlacement.cascadeOverlapping(dedupeSingletons(normalized))
         save()
+    }
+
+    /// 单例组件(如 AI 助手)只保留第一个,清理历史遗留的多余实例。
+    private func dedupeSingletons(_ instances: [WidgetInstance]) -> [WidgetInstance] {
+        var seen = Set<WidgetKind>()
+        return instances.filter { instance in
+            guard !instance.kind.allowsMultiple else { return true }
+            return seen.insert(instance.kind).inserted
+        }
     }
 
     private func save() {

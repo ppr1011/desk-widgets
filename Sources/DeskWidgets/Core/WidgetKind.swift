@@ -7,6 +7,7 @@ enum WidgetKind: String, Codable, CaseIterable, Identifiable {
     case note
     case todo
     case systemMonitor
+    case aiAgent
 
     var id: String { rawValue }
 
@@ -17,14 +18,23 @@ enum WidgetKind: String, Codable, CaseIterable, Identifiable {
         case .note: return "便签"
         case .todo: return "待办"
         case .systemMonitor: return "系统监控"
+        case .aiAgent: return "AI 助手"
         }
     }
 
     /// 是否需要键盘/按钮交互(便签/待办)。为 true 时窗口可激活且关闭背景拖动。
     var acceptsKeyboardInput: Bool {
         switch self {
-        case .note, .todo: return true
+        case .note, .todo, .aiAgent: return true
         default: return false
+        }
+    }
+
+    /// 是否允许放置多个实例。AI 助手为全局单例(共享同一份设置),只允许一个。
+    var allowsMultiple: Bool {
+        switch self {
+        case .aiAgent: return false
+        default: return true
         }
     }
 }

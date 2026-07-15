@@ -47,8 +47,14 @@ struct ManagerView: View {
                 updated.frame = placement.frame
                 updated.screenKey = placement.screenKey
                 store.update(updated)
+                // 同时把组件召回到当前正在查看的桌面(Space),避免它停留在别的桌面看不到。
+                NotificationCenter.default.post(
+                    name: WindowManager.moveToActiveSpaceNotification,
+                    object: instance.id
+                )
             }
             .buttonStyle(.bordered)
+            .help("移到当前桌面并居中显示")
             Button(instance.level == .desktop ? "贴桌面" : "悬浮") {
                 var updated = instance
                 updated.level = (instance.level == .desktop) ? .floating : .desktop
