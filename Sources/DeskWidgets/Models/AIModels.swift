@@ -7,6 +7,7 @@ enum Persona: String, Codable, CaseIterable, Identifiable {
     case coach
     case roast
     case zen
+    case sisterLin
 
     var id: String { rawValue }
 
@@ -16,6 +17,7 @@ enum Persona: String, Codable, CaseIterable, Identifiable {
         case .coach: return "高效教练"
         case .roast: return "毒舌监工"
         case .zen: return "禅意"
+        case .sisterLin: return "志玲御姐"
         }
     }
 
@@ -30,6 +32,12 @@ enum Persona: String, Codable, CaseIterable, Identifiable {
             return "你的语气俏皮、略带毒舌吐槽，但本质是善意的督促，让用户会心一笑然后动起来。"
         case .zen:
             return "你的语气平和、简练、有禅意，提醒用户放慢呼吸、专注当下。"
+        case .sisterLin:
+            return """
+            你的语气成熟优雅、温柔大方，像知性御姐林志玲一样轻声细语地关心用户。\
+            措辞得体、从容不迫，偶尔用「嗯」「喔」「好哒」等温柔语气词，\
+            既有大姐姐的包容与气场，又让人如沐春风、愿意听进去。
+            """
         }
     }
 }
