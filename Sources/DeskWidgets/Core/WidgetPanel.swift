@@ -42,26 +42,40 @@ final class WidgetPanel: NSPanel, NSWindowDelegate {
         backgroundColor = .clear
         isOpaque = false
         hasShadow = false
-        collectionBehavior = [.ignoresCycle]
         self.contentView = contentView
         contentView.autoresizingMask = [.width, .height]
         delegate = self
         applyLevel(instance.level)
+        applySpaceBehavior(instance.showOnAllSpaces)
         setFrame(instance.frame, display: true)
     }
 
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
 
-    /// 把组件移动到当前正在显示的桌面(Space)。
-    /// macOS 公开 API 无法按序号定位 Space,只能借助 .moveToActiveSpace 移到当前活跃桌面;
-    /// 移动完成后恢复原 collectionBehavior,避免每次激活都被拉走。
+    /// 应用桌面(Space)显示策略。
+    /// - true:在所有桌面显示(常驻,跟随切换)。
+    /// - false:仅停留在其所在桌面。
+    func applySpaceBehavior(_ showOnAllSpaces: Bool) {
+        collectionBehavior = showOnAllSpaces
+            ? [.canJoinAllSpaces, .stationary, .ignoresCycle]
+            : [.ignoresCycle]
+    }
+
+    /// 把组件移动到当前正在显示的桌面(Space),保持原位置。
+    /// 可靠做法:先隐藏窗口 → 设为 .moveToActiveSpace → 重新 orderFront,
+    /// 让系统把它当作"新出现的窗口"落到当前桌面;稳定后恢复为仅当前桌面(钉住)。
     func moveToActiveSpace() {
-        let original = collectionBehavior
-        collectionBehavior = [.moveToActiveSpace]
-        orderFrontRegardless()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
-            self?.collectionBehavior = original
+        let targetFrame = frame
+        orderOut(nil)
+        collectionBehavior = [.moveToActiveSpace, .ignoresCycle]
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.setFrame(targetFrame, display: false)
+            self.orderFrontRegardless()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+                self?.collectionBehavior = [.ignoresCycle]
+            }
         }
     }
 

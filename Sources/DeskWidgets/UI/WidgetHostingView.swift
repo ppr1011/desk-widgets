@@ -48,14 +48,26 @@ final class WidgetHostingView: NSHostingView<AnyView> {
         // 后台(accessory)状态下自动校验会把菜单项判为不可用而置灰,这里关闭自动校验,手动保证可点。
         menu.autoenablesItems = false
 
-        let moveItem = NSMenuItem(
-            title: "移到当前桌面",
-            action: #selector(moveToActiveSpace(_:)),
+        let allSpacesItem = NSMenuItem(
+            title: "在所有桌面显示",
+            action: #selector(toggleAllSpaces(_:)),
             keyEquivalent: ""
         )
-        moveItem.target = self
-        moveItem.isEnabled = true
-        menu.addItem(moveItem)
+        allSpacesItem.target = self
+        allSpacesItem.isEnabled = true
+        allSpacesItem.state = (instance?.showOnAllSpaces == true) ? .on : .off
+        menu.addItem(allSpacesItem)
+
+        if instance?.showOnAllSpaces != true {
+            let moveItem = NSMenuItem(
+                title: "移到当前桌面",
+                action: #selector(moveToActiveSpace(_:)),
+                keyEquivalent: ""
+            )
+            moveItem.target = self
+            moveItem.isEnabled = true
+            menu.addItem(moveItem)
+        }
 
         menu.addItem(.separator())
 
@@ -81,6 +93,12 @@ final class WidgetHostingView: NSHostingView<AnyView> {
             name: WindowManager.moveToActiveSpaceNotification,
             object: instanceID
         )
+    }
+
+    @objc private func toggleAllSpaces(_ sender: NSMenuItem) {
+        guard let instanceID, var instance = widgetStore?.instance(id: instanceID) else { return }
+        instance.showOnAllSpaces.toggle()
+        widgetStore?.update(instance)
     }
 }
 

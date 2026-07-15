@@ -28,16 +28,9 @@ final class WindowManager {
         }
     }
 
-    /// 把组件搬到「当前鼠标所在屏幕的可见区域中央 + 当前 Space」并确保露出。
+    /// 把组件搬到当前正在显示的桌面(Space),保持原有位置,不重新居中。
     private func moveToActiveSpace(id: UUID) {
-        guard let panel = panels[id], let instance = store.instance(id: id) else { return }
-        let placement = ScreenPlacement.centeredOnActiveScreen(size: instance.frame.size)
-        var updated = instance
-        updated.frame = placement.frame
-        updated.screenKey = placement.screenKey
-        store.update(updated)
-        panel.setFrame(placement.frame, display: true)
-        panel.moveToActiveSpace()
+        panels[id]?.moveToActiveSpace()
     }
 
     deinit {
@@ -55,6 +48,7 @@ final class WindowManager {
         for instance in instances {
             if let panel = panels[instance.id] {
                 panel.applyLevel(instance.level)
+                panel.applySpaceBehavior(instance.showOnAllSpaces)
                 if panel.frame != instance.frame {
                     panel.setFrame(instance.frame, display: true)
                 }

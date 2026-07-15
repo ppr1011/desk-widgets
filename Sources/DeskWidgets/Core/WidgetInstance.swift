@@ -14,6 +14,8 @@ struct WidgetInstance: Codable, Identifiable, Equatable {
     var screenKey: String?
     /// 各组件私有配置。用字符串字典保持通用;复杂内容(如便签文本)也以字符串存放。
     var config: [String: String]
+    /// 是否在所有桌面(Space)显示。false = 仅停留在其所在的那个桌面。
+    var showOnAllSpaces: Bool
 
     init(
         id: UUID = UUID(),
@@ -21,7 +23,8 @@ struct WidgetInstance: Codable, Identifiable, Equatable {
         frame: CGRect,
         level: WidgetLevel = .desktop,
         screenKey: String? = nil,
-        config: [String: String] = [:]
+        config: [String: String] = [:],
+        showOnAllSpaces: Bool = false
     ) {
         self.id = id
         self.kind = kind
@@ -29,5 +32,22 @@ struct WidgetInstance: Codable, Identifiable, Equatable {
         self.level = level
         self.screenKey = screenKey
         self.config = config
+        self.showOnAllSpaces = showOnAllSpaces
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, kind, frame, level, screenKey, config, showOnAllSpaces
+    }
+
+    /// 容错解码:老数据缺少 showOnAllSpaces 字段时回退为 false。
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        kind = try c.decode(WidgetKind.self, forKey: .kind)
+        frame = try c.decode(CGRect.self, forKey: .frame)
+        level = try c.decodeIfPresent(WidgetLevel.self, forKey: .level) ?? .desktop
+        screenKey = try c.decodeIfPresent(String.self, forKey: .screenKey)
+        config = try c.decodeIfPresent([String: String].self, forKey: .config) ?? [:]
+        showOnAllSpaces = try c.decodeIfPresent(Bool.self, forKey: .showOnAllSpaces) ?? false
     }
 }
