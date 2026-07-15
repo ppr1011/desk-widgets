@@ -4,6 +4,9 @@ import Foundation
 /// 类比 Java:`enum WidgetKind { CLOCK("时钟"); ... }`,String 原始值用于 JSON 持久化。
 enum WidgetKind: String, Codable, CaseIterable, Identifiable {
     case clock
+    case note
+    case todo
+    case systemMonitor
 
     var id: String { rawValue }
 
@@ -11,6 +14,17 @@ enum WidgetKind: String, Codable, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .clock: return "时钟"
+        case .note: return "便签"
+        case .todo: return "待办"
+        case .systemMonitor: return "系统监控"
+        }
+    }
+
+    /// 是否需要键盘/按钮交互(便签/待办)。为 true 时窗口可激活且关闭背景拖动。
+    var acceptsKeyboardInput: Bool {
+        switch self {
+        case .note, .todo: return true
+        default: return false
         }
     }
 }

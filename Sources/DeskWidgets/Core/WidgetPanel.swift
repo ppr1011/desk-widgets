@@ -11,30 +11,45 @@ final class WidgetPanel: NSPanel, NSWindowDelegate {
     var onFrameChanged: ((CGRect) -> Void)?
     private var saveWorkItem: DispatchWorkItem?
 
-    init(instance: WidgetInstance, contentView: NSView) {
+    /// 低于普通窗口一级,仍在壁纸之上,可接收鼠标事件(桌面层收不到点击)
+    private static let belowNormalLevel = NSWindow.Level(
+        rawValue: Int(CGWindowLevelForKey(.normalWindow)) - 1
+    )
+
+    init(instance: WidgetInstance, contentView: NSView, acceptsKeyboardInput: Bool = false) {
         self.instanceID = instance.id
+        var style: NSWindow.StyleMask = [.borderless]
+        if !acceptsKeyboardInput {
+            style.insert(.nonactivatingPanel)
+        }
         super.init(
             contentRect: instance.frame,
-            styleMask: [.borderless, .nonactivatingPanel],
+            styleMask: style,
             backing: .buffered,
             defer: false
         )
         isFloatingPanel = true
+        hidesOnDeactivate = false
         isMovable = true
-        isMovableByWindowBackground = true
-        // 透明:窗口本身不画背景,交给内部 SwiftUI 视图
+        acceptsMouseMovedEvents = true
+        // 交互型组件(便签/待办)关闭背景拖动,否则 TextField/Button 点击会被吞掉
+        isMovableByWindowBackground = !acceptsKeyboardInput
+        becomesKeyOnlyIfNeeded = false
+        if acceptsKeyboardInput {
+            worksWhenModal = true
+        }
+        isExcludedFromWindowsMenu = true
         backgroundColor = .clear
         isOpaque = false
         hasShadow = false
-        // 在所有 Space 显示、不进 Mission Control 循环、不随桌面切换
-        collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
+        collectionBehavior = [.ignoresCycle]
         self.contentView = contentView
+        contentView.autoresizingMask = [.width, .height]
         delegate = self
         applyLevel(instance.level)
         setFrame(instance.frame, display: true)
     }
 
-    /// borderless 窗口默认无法成为 key/main;组件若需键盘输入(如便签)必须放开
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
 
@@ -42,19 +57,18 @@ final class WidgetPanel: NSPanel, NSWindowDelegate {
     func applyLevel(_ level: WidgetLevel) {
         switch level {
         case .desktop:
-            // 贴桌面层:像壁纸挂件,位于普通窗口之下
-            self.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.desktopWindow)))
+            // 贴桌面:低于普通 App 窗口,但高于壁纸,保留鼠标交互能力
+            isFloatingPanel = true
+            self.level = Self.belowNormalLevel
         case .floating:
+            isFloatingPanel = true
             self.level = .floating
         }
     }
 
-    // MARK: - NSWindowDelegate:移动/缩放后节流落盘
-
     func windowDidMove(_ notification: Notification) { scheduleFrameSave() }
     func windowDidResize(_ notification: Notification) { scheduleFrameSave() }
 
-    /// 拖动过程中会连续触发,debounce 0.4s 后再回写,避免频繁写磁盘
     private func scheduleFrameSave() {
         saveWorkItem?.cancel()
         let frame = self.frame

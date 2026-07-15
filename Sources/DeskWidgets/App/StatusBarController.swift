@@ -6,16 +6,19 @@ import SwiftUI
 final class StatusBarController: NSObject {
     private let store: WidgetStore
     private let statusItem: NSStatusItem
-    private var managerWindow: NSWindow?
+    private var managerPanel: NSPanel?
 
     init(store: WidgetStore) {
         self.store = store
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         super.init()
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "square.grid.2x2",
-                                   accessibilityDescription: "DeskWidgets")
+            let image = NSImage(systemSymbolName: "square.grid.2x2",
+                                accessibilityDescription: "DeskWidgets")
+            image?.isTemplate = true
+            button.image = image
         }
+        statusItem.isVisible = true
         buildMenu()
     }
 
@@ -55,27 +58,41 @@ final class StatusBarController: NSObject {
               let kind = WidgetKind(rawValue: raw),
               let provider = WidgetRegistry.shared.provider(for: kind) else { return }
         let size = provider.defaultSize
-        let screen = NSScreen.main?.visibleFrame ?? CGRect(x: 0, y: 0, width: 1440, height: 900)
-        // 放在屏幕中心
-        let origin = CGPoint(x: screen.midX - size.width / 2,
-                             y: screen.midY - size.height / 2)
-        let instance = WidgetInstance(kind: kind,
-                                      frame: CGRect(origin: origin, size: size))
+        let placement = ScreenPlacement.centeredOnActiveScreen(
+            size: size,
+            index: store.instances.count
+        )
+        let instance = WidgetInstance(
+            kind: kind,
+            frame: placement.frame,
+            screenKey: placement.screenKey
+        )
         store.add(instance)
     }
 
     @objc private func openManager() {
-        if managerWindow == nil {
+        if managerPanel == nil {
             let hosting = NSHostingController(rootView: ManagerView().environmentObject(store))
-            let window = NSWindow(contentViewController: hosting)
-            window.title = "管理组件"
-            window.styleMask = [.titled, .closable, .miniaturizable]
-            window.isReleasedWhenClosed = false
-            managerWindow = window
+            // 不加 .nonactivatingPanel:管理面板需要成为 key 窗口,否则 SwiftUI 按钮点击不触发
+            let panel = NSPanel(
+                contentRect: NSRect(x: 0, y: 0, width: 360, height: 420),
+                styleMask: [.titled, .closable],
+                backing: .buffered,
+                defer: false
+            )
+            panel.level = .floating
+            panel.title = "管理组件"
+            panel.isReleasedWhenClosed = false
+            panel.isExcludedFromWindowsMenu = true
+            panel.hidesOnDeactivate = false
+            panel.contentViewController = hosting
+            managerPanel = panel
         }
+        managerPanel?.center()
+        // 激活 App 使面板成为 key(激活不改变 .accessory 策略,不会出现 Dock 图标)
         NSApp.activate(ignoringOtherApps: true)
-        managerWindow?.center()
-        managerWindow?.makeKeyAndOrderFront(nil)
+        managerPanel?.makeKeyAndOrderFront(nil)
+        AccessoryModeEnforcer.apply()
     }
 
     @objc private func quit() {

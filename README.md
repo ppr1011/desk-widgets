@@ -27,8 +27,8 @@ open DeskWidgets.app   # 启动(菜单栏出现 ▦ 图标)
 Sources/DeskWidgets/
 ├── App/                 # 入口、生命周期、菜单栏
 ├── Core/                # 组件框架:协议 / 注册表 / 模型 / 持久化 / 窗口封装
-├── Widgets/             # 各具体组件(当前:Clock)
-├── Services/            # (预留)系统指标采集、开机自启
+├── Widgets/             # 各具体组件(Clock / Note / Todo / SystemMonitor)
+├── Services/            # 系统指标采集(SystemMetricsSampler)
 └── UI/                  # 管理面板
 ```
 
@@ -51,8 +51,8 @@ Sources/DeskWidgets/
 
 - [x] **M0** 脚手架 + 菜单栏 App + 透明浮动窗口
 - [x] **M1** 组件框架(协议 / 注册表 / 持久化 / 窗口层级 / 启动恢复)+ 时钟组件验证
-- [ ] **M2** 便签 / 待办组件
-- [ ] **M3** 系统监控组件(CPU / 内存 / 网速)
+- [x] **M2** 便签 / 待办组件
+- [x] **M3** 系统监控组件(CPU / 内存 / 网速)
 - [ ] **M4** 管理面板打磨 + 开机自启(SMAppService)
 - [ ] **M5** 打包分发(Xcode / 签名 / 公证 / DMG)
 

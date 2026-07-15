@@ -36,7 +36,19 @@ struct ManagerView: View {
             Image(systemName: "square.dashed")
             Text(name)
             Spacer()
-            // 切换层级
+            Button("显示") {
+                let index = store.instances.firstIndex(where: { $0.id == instance.id }) ?? 0
+                let placement = ScreenPlacement.centeredFrame(
+                    size: instance.frame.size,
+                    screenKey: instance.screenKey,
+                    index: index
+                )
+                var updated = instance
+                updated.frame = placement.frame
+                updated.screenKey = placement.screenKey
+                store.update(updated)
+            }
+            .buttonStyle(.bordered)
             Button(instance.level == .desktop ? "贴桌面" : "悬浮") {
                 var updated = instance
                 updated.level = (instance.level == .desktop) ? .floating : .desktop

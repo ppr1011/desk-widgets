@@ -38,10 +38,15 @@ final class WidgetStore: ObservableObject {
         save()
     }
 
-    /// 仅更新位置/尺寸(拖动/缩放结束时),避免整对象替换
+    /// 仅更新位置/尺寸(拖动/缩放结束时),同步更新所属屏幕
     func updateFrame(id: UUID, frame: CGRect) {
         guard let idx = instances.firstIndex(where: { $0.id == id }) else { return }
-        instances[idx].frame = frame
+        let result = ScreenPlacement.normalizeFrame(
+            frame,
+            screenKey: instances[idx].screenKey
+        )
+        instances[idx].frame = result.frame
+        instances[idx].screenKey = result.screenKey
         save()
     }
 
@@ -54,7 +59,18 @@ final class WidgetStore: ObservableObject {
     private func load() {
         guard let data = try? Data(contentsOf: fileURL),
               let decoded = try? JSONCoders.makeDecoder().decode([WidgetInstance].self, from: data) else { return }
-        instances = decoded
+        let normalized = decoded.map { instance in
+            var fixed = instance
+            let result = ScreenPlacement.normalizeFrame(
+                instance.frame,
+                screenKey: instance.screenKey
+            )
+            fixed.frame = result.frame
+            fixed.screenKey = result.screenKey
+            return fixed
+        }
+        instances = ScreenPlacement.cascadeOverlapping(normalized)
+        save()
     }
 
     private func save() {

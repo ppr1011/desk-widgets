@@ -10,6 +10,8 @@ struct WidgetInstance: Codable, Identifiable, Equatable {
     /// 窗口位置与尺寸(屏幕坐标系,原点在左下角 —— AppKit 约定)
     var frame: CGRect
     var level: WidgetLevel
+    /// 所属显示器标识(名称+frame),重启后恢复到对应屏幕
+    var screenKey: String?
     /// 各组件私有配置。用字符串字典保持通用;复杂内容(如便签文本)也以字符串存放。
     var config: [String: String]
 
@@ -17,13 +19,15 @@ struct WidgetInstance: Codable, Identifiable, Equatable {
         id: UUID = UUID(),
         kind: WidgetKind,
         frame: CGRect,
-        level: WidgetLevel = .floating,
+        level: WidgetLevel = .desktop,
+        screenKey: String? = nil,
         config: [String: String] = [:]
     ) {
         self.id = id
         self.kind = kind
         self.frame = frame
         self.level = level
+        self.screenKey = screenKey
         self.config = config
     }
 }

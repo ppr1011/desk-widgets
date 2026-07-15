@@ -11,7 +11,14 @@ protocol WidgetProvider {
     /// 新建时的默认尺寸
     var defaultSize: CGSize { get }
 
+    /// 是否需要键盘输入(便签/待办等)。为 true 时窗口可激活以接收按键。
+    var acceptsKeyboardInput: Bool { get }
+
     /// 根据实例与全局 store 产出 SwiftUI 视图。
     /// 用 AnyView 做类型擦除,以便注册表统一存放不同 provider(类比返回 interface 引用)。
     func makeView(instance: WidgetInstance, store: WidgetStore) -> AnyView
+}
+
+extension WidgetProvider {
+    var acceptsKeyboardInput: Bool { false }
 }

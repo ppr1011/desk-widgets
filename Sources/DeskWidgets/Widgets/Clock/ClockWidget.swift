@@ -12,8 +12,11 @@ struct ClockWidget: WidgetProvider {
     }
 }
 
-/// TimelineView(.periodic) 让 SwiftUI 每秒自动重绘,无需手动 Timer。
 private struct ClockView: View {
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var isDark: Bool { colorScheme == .dark }
+
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             let date = context.date
@@ -21,13 +24,34 @@ private struct ClockView: View {
                 Text(date, format: .dateTime.hour().minute().second())
                     .font(.system(size: 34, weight: .semibold, design: .rounded))
                     .monospacedDigit()
+                    .foregroundStyle(isDark ? .white : .black.opacity(0.85))
                 Text(date, format: .dateTime.year().month().day().weekday(.wide))
                     .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(isDark ? Color.white.opacity(0.65) : Color.black.opacity(0.5))
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .padding()
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+            .background(clockBackground)
         }
+    }
+
+    private var clockBackground: some View {
+        RoundedRectangle(cornerRadius: 16)
+            .fill(.regularMaterial)
+            .overlay {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(
+                        isDark
+                            ? Color(red: 0.14, green: 0.15, blue: 0.18).opacity(0.75)
+                            : Color.white.opacity(0.82)
+                    )
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 16)
+                    .strokeBorder(
+                        isDark ? Color.white.opacity(0.14) : Color.black.opacity(0.08),
+                        lineWidth: 0.5
+                    )
+            }
     }
 }

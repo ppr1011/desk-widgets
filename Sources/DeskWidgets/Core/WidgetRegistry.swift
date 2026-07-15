@@ -25,5 +25,8 @@ final class WidgetRegistry {
     /// 注册所有内置组件。新增组件后在这里补一行。
     func registerBuiltins() {
         register(ClockWidget())
+        register(NoteWidget())
+        register(TodoWidget())
+        register(SystemMonitorWidget())
     }
 }

@@ -6,12 +6,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var windowManager: WindowManager!
     private var statusBar: StatusBarController!
 
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        AccessoryModeEnforcer.apply()
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // 1) 注册内置组件
+        guard ensureSingleInstance() else { return }
+        AccessoryModeEnforcer.apply()
         WidgetRegistry.shared.registerBuiltins()
-        // 2) 启动窗口管理器(订阅 store,自动恢复已保存组件)
         windowManager = WindowManager(store: store)
-        // 3) 菜单栏图标
         statusBar = StatusBarController(store: store)
+    }
+
+    func applicationDidBecomeActive(_ notification: Notification) {
+        AccessoryModeEnforcer.apply()
+    }
+
+    /// 禁止多开:重复启动时激活已有实例并退出当前进程。
+    private func ensureSingleInstance() -> Bool {
+        let currentPID = ProcessInfo.processInfo.processIdentifier
+        let others = NSWorkspace.shared.runningApplications.filter { app in
+            app.processIdentifier != currentPID
+                && (app.bundleIdentifier == Bundle.main.bundleIdentifier
+                    || app.localizedName == "DeskWidgets"
+                    || app.executableURL?.lastPathComponent == "DeskWidgets")
+        }
+        if let existing = others.first {
+            existing.activate(options: [.activateIgnoringOtherApps])
+            NSApp.terminate(nil)
+            return false
+        }
+        return true
     }
 }
